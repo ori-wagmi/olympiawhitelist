@@ -17,8 +17,8 @@ interface IOlympiaNftContract {
 contract OlympiaWhitelist is Ownable, ReentrancyGuard {
     bool isStarted;
     bytes32 public merkleRoot;
-    uint256 public priceOneTokenEth = 1.9 ether;
-    uint256 public priceOneTokenOhm = 2000000000; // 9 decimals!!
+    uint256 public priceOneTokenEth = 0.19 ether;
+    uint256 public priceOneTokenOhm = 190000000; // (0.19 OHM) 9 decimals!!
     address paymentReciever = 0x940913C25A23FB6e2778Ec4b29110DC9f3F54fb0;
 
     IOlympiaNftContract constant public nftContract = IOlympiaNftContract(0xeB652a847e5961D1F7FA53699693eC13C008b57B);
