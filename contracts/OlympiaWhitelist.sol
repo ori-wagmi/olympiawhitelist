@@ -1,12 +1,14 @@
-//SPDX-License-Identifier: Unlicense
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "./FullMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
-//import "hardhat/console.sol";
+import "hardhat/console.sol";
 
 interface IOlympiaNftContract {
   function totalSupply() external view returns (uint256);
@@ -18,11 +20,24 @@ contract OlympiaWhitelist is Ownable, ReentrancyGuard {
     bool isStarted;
     bytes32 public merkleRoot;
     uint256 public priceOneTokenEth = 0.19 ether;
-    uint256 public priceOneTokenOhm = 190000000; // (0.19 OHM) 9 decimals!!
     address paymentReciever = 0x940913C25A23FB6e2778Ec4b29110DC9f3F54fb0;
 
     IOlympiaNftContract constant public nftContract = IOlympiaNftContract(0xeB652a847e5961D1F7FA53699693eC13C008b57B);
     IERC20 constant public ohmContract = IERC20(0x64aa3364F17a4D01c6f1751Fd97C2BD3D7e7f1D5);
+    AggregatorV3Interface constant public ohmPriceFeed = AggregatorV3Interface(0x9a72298ae3886221820B1c878d12D872087D3a23);
+
+    // ************Oracle Getters************ //
+    function priceOneTokenOhm() public view returns (uint256) {
+        (
+            /*uint80 roundID*/,
+            int price,
+            /*uint startedAt*/,
+            /*uint timeStamp*/,
+            /*uint80 answeredInRound*/
+        ) = ohmPriceFeed.latestRoundData();
+        // priceOneTokenEth / priceOneOhmInEth * 1e9 for decimals
+        return FullMath.mulDiv(priceOneTokenEth, 1000000000, uint256(price));
+    }
 
     // ************Modifiers************ //
     modifier whitelisted(bytes32[] calldata merkleProof) {
@@ -60,7 +75,7 @@ contract OlympiaWhitelist is Ownable, ReentrancyGuard {
 
     function mintOHM(bytes32[] calldata merkleProof, uint256 amountTokens, uint256 amountOhm) whitelisted(merkleProof) checkSupply(amountTokens) external nonReentrant {
         require(isStarted, "not started");
-        uint256 totalPrice = amountTokens*priceOneTokenOhm;
+        uint256 totalPrice = amountTokens*priceOneTokenOhm();
         require(amountOhm == totalPrice, "not enough OHM");
         uint256 thirdOfToken = nftContract.totalSupply() / 3;
         require((nftContract.nextTokenId()+amountTokens) < thirdOfToken, "OHM mint ended");
@@ -82,10 +97,6 @@ contract OlympiaWhitelist is Ownable, ReentrancyGuard {
 
     function setPriceEth(uint256 _priceOneTokenEth) external onlyOwner {
         priceOneTokenEth = _priceOneTokenEth;
-    }
-
-    function setPriceOhm(uint256 _priceOneTokenOhm) external onlyOwner {
-        priceOneTokenOhm = _priceOneTokenOhm;
     }
 
     function setPaymentReciever(address _paymentReciever) external onlyOwner {

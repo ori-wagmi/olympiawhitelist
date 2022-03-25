@@ -37,7 +37,7 @@ Frontend must call mint and pass in the merkleProof for the given user.
 ### Token payment
 All payment is sent to address 0x940913C25A23FB6e2778Ec4b29110DC9f3F54fb0.
 
-Mint price is represented by `priceOneTokenEth` and `PriceOneTokenOhm` (Ohm is 9 decimals!!).
+Mint price is represented by `priceOneTokenEth` and the `priceOneTokenOhm` is calculated by querying the Chainlink Oracle for the current OHM price.
 
 Whitelisted callers can mint any number of tokens. However, only 1/3 of the totalSupply can be minted with OHM.
 
