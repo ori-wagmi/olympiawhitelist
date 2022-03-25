@@ -23,9 +23,9 @@ const config: HardhatUserConfig = {
   },
   networks: {
     hardhat: {
-      // forking: {
-      //   url: "https://ropsten.infura.io/v3/18bd4091bfc647b9bef6eb178b0547d7",
-      // }
+      forking: {
+        url: "https://eth-mainnet.alchemyapi.io/v2/hf_xN5Ws2zEY3QZzdPvpk0bYpMfDZNjy",
+      }
     },
     ropsten: {
       chainId: 3,
