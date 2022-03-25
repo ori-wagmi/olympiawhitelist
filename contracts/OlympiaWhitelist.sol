@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
-import "hardhat/console.sol";
+//import "hardhat/console.sol";
 
 interface IOlympiaNftContract {
   function totalSupply() external view returns (uint256);
@@ -25,6 +25,8 @@ contract OlympiaWhitelist is Ownable, ReentrancyGuard {
     IOlympiaNftContract constant public nftContract = IOlympiaNftContract(0xeB652a847e5961D1F7FA53699693eC13C008b57B);
     IERC20 constant public ohmContract = IERC20(0x64aa3364F17a4D01c6f1751Fd97C2BD3D7e7f1D5);
     AggregatorV3Interface constant public ohmPriceFeed = AggregatorV3Interface(0x9a72298ae3886221820B1c878d12D872087D3a23);
+
+    uint256 public numOhmMinted;
 
     // ************Oracle Getters************ //
     function priceOneTokenOhm() public view returns (uint256) {
@@ -77,16 +79,16 @@ contract OlympiaWhitelist is Ownable, ReentrancyGuard {
         require(isStarted, "not started");
         uint256 totalPrice = amountTokens*priceOneTokenOhm();
         require(amountOhm == totalPrice, "not enough OHM");
-        uint256 thirdOfToken = nftContract.totalSupply() / 3;
-        require((nftContract.nextTokenId()+amountTokens) < thirdOfToken, "OHM mint ended");
+        require((numOhmMinted+amountTokens) <= 2592, "OHM mint ended");
 
         // send payment to paymentReciever
         ohmContract.transferFrom(msg.sender, paymentReciever, amountOhm);
         // mint NFT(s)
         nftContract.mintNext(msg.sender, amountTokens);
+        numOhmMinted += amountTokens;
     }
 
-    // ************Modifiers************ //
+    // ************Modifiers*****//******* //
     function setIsStarted(bool _isStarted) external onlyOwner {
         isStarted = _isStarted;
     }
@@ -101,5 +103,9 @@ contract OlympiaWhitelist is Ownable, ReentrancyGuard {
 
     function setPaymentReciever(address _paymentReciever) external onlyOwner {
         paymentReciever = _paymentReciever;
+    }
+
+    function setNumOhmMinted(uint256 _numOhmMinted) external onlyOwner {
+        numOhmMinted = _numOhmMinted;
     }
 }

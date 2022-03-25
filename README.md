@@ -4,6 +4,8 @@ This contract is the minter for HallsOfOlympia (0xeB652a847e5961D1F7FA53699693eC
 ## Specs
 OlympiaWhitelist allows minting of HallsOfOlympiaNFT using either native ETH or OHM by whitelisted members.
 
+A maximum of 2592 tokens can be minted with OHM.
+
 ### Whitelisting
 MerkleTree should be a list of addresses hashed with keccak256.
 

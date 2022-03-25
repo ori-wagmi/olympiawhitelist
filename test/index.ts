@@ -177,7 +177,7 @@ describe("Test Whitelist", function () {
     await expect(OlympiaContract.connect(accounts[10]).mintOHM(callerProof, 1, priceOneTokenOhm.mul(100))).to.be.revertedWith("not enough OHM");
 
     // error case, minting >1/3 tokens with OHM
-    await expect(OlympiaContract.connect(accounts[10]).mintOHM(callerProof, 2592, priceOneTokenOhm.mul(2592))).to.be.revertedWith("OHM mint ended");
+    await expect(OlympiaContract.connect(accounts[10]).mintOHM(callerProof, 3000, priceOneTokenOhm.mul(3000))).to.be.revertedWith("OHM mint ended");
 
   });
 
