@@ -3,6 +3,7 @@ import { expect } from "chai";
 const { network, ethers } = require("hardhat");
 const keccak256 = require("keccak256");
 const { MerkleTree } = require("merkletreejs");
+const hardhat = require("hardhat");
 
 describe("Test Whitelist", function () {
   let merkleTreeDB: String[];
@@ -35,6 +36,18 @@ describe("Test Whitelist", function () {
   });
 
   this.beforeEach(async () => {
+    await network.provider.request({
+      method: "hardhat_reset",
+      params: [
+        {
+          forking: {
+            jsonRpcUrl: hardhat.config.networks.hardhat.forking.url,
+            blockNumber: hardhat.config.networks.hardhat.forking.blockNumber, // blocknumber defined in hardhat.config.js
+          },
+        },
+      ],
+    });
+
     const OlympiaFactory = await ethers.getContractFactory("OlympiaWhitelist");
     OlympiaContract = await OlympiaFactory.deploy();
     await OlympiaContract.deployed();
@@ -55,17 +68,123 @@ describe("Test Whitelist", function () {
 
     // grant MinterRole for OlympiaContract
     HallsOfOlympia.grantRole(keccak256("MinterRole"), OlympiaContract.address);
+
+    // start whitelist
+    await OlympiaContract.setIsStarted(true);
   })
 
   it("Test mint ETH", async function () {
     let callerHash = convertEntryToHash(accounts[10].address);
     let callerProof = merkleTree.getHexProof(callerHash);
     let priceOneTokenEth = await OlympiaContract.priceOneTokenEth();
-    let nextTokenId = HallsOfOlympia.nextTokenId();
 
+    // mint 3 tokens
+    let nextTokenId = await HallsOfOlympia.nextTokenId();
     await OlympiaContract.connect(accounts[10]).mintETH(callerProof, 3, {value:priceOneTokenEth.mul(3)});
-    let afterMintTokenId = HallsOfOlympia.nextTokenId();
+    let afterMintTokenId = await HallsOfOlympia.nextTokenId();
     expect(afterMintTokenId - nextTokenId, "didn't mint 3 tokens").to.be.equal(3);
+    expect(await HallsOfOlympia.ownerOf(4), "tokenid 4 not owned by 10").to.be.equal(accounts[10].address);
+    expect(await HallsOfOlympia.ownerOf(6), "tokenid 6 not owned by 10").to.be.equal(accounts[10].address)
+    await expect(HallsOfOlympia.ownerOf(7)).to.be.revertedWith("ERC721: owner query for nonexistent token");
+
+    // mint 2 more tokens
+    nextTokenId = await HallsOfOlympia.nextTokenId();
+    await OlympiaContract.connect(accounts[10]).mintETH(callerProof, 2, {value:priceOneTokenEth.mul(2)});
+    afterMintTokenId = await HallsOfOlympia.nextTokenId();
+    expect(afterMintTokenId - nextTokenId, "didn't mint 2 tokens").to.be.equal(2);
+    expect(await HallsOfOlympia.ownerOf(7), "tokenid 7 not owned by 10").to.be.equal(accounts[10].address);
+    expect(await HallsOfOlympia.ownerOf(8), "tokenid 8 not owned by 10").to.be.equal(accounts[10].address)
+    await expect(HallsOfOlympia.ownerOf(9)).to.be.revertedWith("ERC721: owner query for nonexistent token");
+
+    // error case, mint too many tokens
+    await expect(OlympiaContract.connect(accounts[10]).mintETH(callerProof, 8000, {value:priceOneTokenEth})).to.be.revertedWith("no supply");
+
+    // error case, not enough funds
+    await expect(OlympiaContract.connect(accounts[10]).mintETH(callerProof, 1, {value:0})).to.be.revertedWith("not enough ETH");
   });
 
+  it("Test mint Ohm", async function () {
+    let callerHash = convertEntryToHash(accounts[10].address);
+    let callerProof = merkleTree.getHexProof(callerHash);
+    let priceOneTokenOhm = await OlympiaContract.priceOneTokenOhm();
+
+    // deposit ETH to WETH
+    let wethContract = new ethers.Contract(
+      "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+      require("./weth.json"),
+      accounts[10]
+    );
+
+    await wethContract
+    .connect(accounts[10])
+    .approve(wethContract.address, ethers.constants.MaxUint256);
+    await wethContract.connect(accounts[10]).deposit({ value: ethers.utils.parseEther("5.0") });
+
+
+    // swap WETH to OHM
+    let unirouter = new ethers.Contract("0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F", require("./unirouter.json"), accounts[10]);
+
+    await wethContract
+    .connect(accounts[10])
+    .approve(unirouter.address, ethers.constants.MaxUint256);
+
+    let ohmContract = new ethers.Contract(
+      "0x64aa3364F17a4D01c6f1751Fd97C2BD3D7e7f1D5",
+      require("./weth.json"),
+      accounts[10]
+    );
+    await ohmContract
+    .connect(accounts[10])
+    .approve(unirouter.address, ethers.constants.MaxUint256);
+
+    await unirouter
+    .connect(accounts[10])
+    .swapExactTokensForTokens(
+      await wethContract.balanceOf(accounts[10].address),
+      0,
+      [wethContract.address, ohmContract.address],
+      accounts[10].address,
+      (await ethers.provider.getBlock("latest")).timestamp + 1000
+    );
+
+    // approve Ohm for OlympiaWhitelist
+    await ohmContract
+    .connect(accounts[10])
+    .approve(OlympiaContract.address, ethers.constants.MaxUint256);
+
+
+    // mint 3 tokens
+    let nextTokenId = await HallsOfOlympia.nextTokenId();
+    await OlympiaContract.connect(accounts[10]).mintOHM(callerProof, 3, priceOneTokenOhm.mul(3));
+    let afterMintTokenId = await HallsOfOlympia.nextTokenId();
+    expect(afterMintTokenId - nextTokenId, "didn't mint 3 tokens").to.be.equal(3);
+    expect(await HallsOfOlympia.ownerOf(4), "tokenid 4 not owned by 10").to.be.equal(accounts[10].address);
+    expect(await HallsOfOlympia.ownerOf(6), "tokenid 6 not owned by 10").to.be.equal(accounts[10].address)
+    await expect(HallsOfOlympia.ownerOf(7)).to.be.revertedWith("ERC721: owner query for nonexistent token");
+
+    // mint 1 more tokens
+    nextTokenId = await HallsOfOlympia.nextTokenId();
+    await OlympiaContract.connect(accounts[10]).mintOHM(callerProof, 1, priceOneTokenOhm.mul(1));
+    afterMintTokenId = await HallsOfOlympia.nextTokenId();
+    expect(afterMintTokenId - nextTokenId, "didn't mint 1 tokens").to.be.equal(1);
+    expect(await HallsOfOlympia.ownerOf(7), "tokenid 7 not owned by 10").to.be.equal(accounts[10].address);
+    await expect(HallsOfOlympia.ownerOf(8)).to.be.revertedWith("ERC721: owner query for nonexistent token");
+
+    // error case, mint too many tokens
+    await expect(OlympiaContract.connect(accounts[10]).mintOHM(callerProof, 8000, priceOneTokenOhm)).to.be.revertedWith("no supply");
+
+    // error case, not enough funds
+    await expect(OlympiaContract.connect(accounts[10]).mintOHM(callerProof, 1, priceOneTokenOhm.mul(100))).to.be.revertedWith("not enough OHM");
+
+    // error case, minting >1/3 tokens with OHM
+    await expect(OlympiaContract.connect(accounts[10]).mintOHM(callerProof, 2592, priceOneTokenOhm.mul(2592))).to.be.revertedWith("OHM mint ended");
+
+  });
+
+  it("Test non-whitelist mint", async function() {
+    let callerHash = convertEntryToHash(accounts[10].address);
+    let callerProof = merkleTree.getHexProof(callerHash);
+    await expect(OlympiaContract.connect(accounts[1]).mintOHM(callerProof, 3, 10)).to.be.revertedWith("not whitelisted");
+    await expect(OlympiaContract.connect(accounts[1]).mintETH(callerProof, 3, {value: 10})).to.be.revertedWith("not whitelisted");
+  });
 });
