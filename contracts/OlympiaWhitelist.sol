@@ -23,6 +23,7 @@ contract OlympiaWhitelist is Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
     bool public isPublicMintStarted;
     bytes32 public merkleRoot;
     uint256 public numOhmMinted;
+    bytes32 public originalTokenHash;
 
     // Payment
     uint256 public priceOneTokenEth = 0.19 ether;
@@ -151,5 +152,10 @@ contract OlympiaWhitelist is Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
 
     function setNumOhmMinted(uint256 _numOhmMinted) external onlyOwner {
         numOhmMinted = _numOhmMinted;
+    }
+
+    function setOriginalTokenHash(bytes32 _originalTokenHash) external onlyOwner {
+        require(!callOnce, "can't set after VRF");
+        originalTokenHash = _originalTokenHash;
     }
 }
