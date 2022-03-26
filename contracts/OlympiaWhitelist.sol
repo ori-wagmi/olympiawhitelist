@@ -95,6 +95,7 @@ contract OlympiaWhitelist is Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
     // ************Mint functions************ //
     function mintETH(bytes32[] calldata merkleProof, uint256 amount) whitelisted(merkleProof) checkSupply(amount) external payable nonReentrant {
         require(isStarted, "not started");
+        require(amount <= 20, "max 20");
         uint256 totalPrice = amount*priceOneTokenEth;
         require(msg.value >= totalPrice, "not enough ETH");
 
@@ -115,6 +116,7 @@ contract OlympiaWhitelist is Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
 
     function mintOHM(bytes32[] calldata merkleProof, uint256 amountTokens, uint256 amountOhm) whitelisted(merkleProof) checkSupply(amountTokens) external nonReentrant {
         require(isStarted, "not started");
+        require (amountTokens <= 20, "max 20");
         uint256 totalPrice = amountTokens*priceOneTokenOhm();
         require(amountOhm == totalPrice, "not enough OHM");
         require((numOhmMinted+amountTokens) <= 2592, "OHM mint ended");
