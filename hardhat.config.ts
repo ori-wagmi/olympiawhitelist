@@ -13,7 +13,7 @@ const { PRIVATE_KEY } = process.env;
 
 const config: HardhatUserConfig = {
   solidity: {
-    version: "0.8.0",
+    version: "0.8.7",
     settings: {
       optimizer: {
         enabled: true,
@@ -25,7 +25,7 @@ const config: HardhatUserConfig = {
     hardhat: {
       forking: {
         url: "https://eth-mainnet.alchemyapi.io/v2/hf_xN5Ws2zEY3QZzdPvpk0bYpMfDZNjy",
-        blockNumber: 14455965
+        blockNumber: 14458594
       }
     },
     ropsten: {
@@ -33,6 +33,11 @@ const config: HardhatUserConfig = {
       url: `https://ropsten.infura.io/v3/18bd4091bfc647b9bef6eb178b0547d7`,
       accounts: [ `0x${PRIVATE_KEY}` ],
     },
+    rinkeby: {
+      chainId: 4,
+      url: `https://rinkeby.infura.io/v3/c0a809d606714c29bc1460f8fa798876`,
+      accounts: [ `0x${PRIVATE_KEY}` ],
+    }
   }
 };
 

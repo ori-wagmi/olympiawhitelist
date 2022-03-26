@@ -45,10 +45,24 @@ Whitelisted callers can mint any number of tokens. However, only 1/3 of the tota
 
 **!! Deployer is responsible for maintaining ETH and OHM price via the `setPriceEth` and `setPriceOhm` functions.**
 
+### VRF
+This contract uses Chainlink VRF to generate a random offset between 1 and 7776. Offset can only be generated once.
+
+**!! Deployer is responsible for calling requestRandomWords to generate the offset**
+
+*notes*
+Rinkbey testnet:
+```javascript
+    VRFCoordinatorV2Interface constant internal vrfCoordinator = VRFCoordinatorV2Interface(0x6168499c0cFfCaCD319c818142124B7A15E857ab);
+    uint64 constant internal subscriptionId = 1902;
+    bytes32 constant internal keyHash = 0xd89b2bf150e3b9e13446986e571fb9cab24b13cea0a43ea20a6049a85cc807cc;
+```
+
 ### Requirements after deployment
 1. OlympiaWhitelist must be set as MinterRole for HallsOfOlympia
 2. Deployer must set the merkleRoot
 3. Deployer must set isStarted to true
+4. Deployer must call requestRandomWords
 
 # Testing
 Tests can be run locally with `npx hardhat test`

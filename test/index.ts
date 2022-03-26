@@ -187,4 +187,30 @@ describe("Test Whitelist", function () {
     await expect(OlympiaContract.connect(accounts[1]).mintOHM(callerProof, 3, 10)).to.be.revertedWith("not whitelisted");
     await expect(OlympiaContract.connect(accounts[1]).mintETH(callerProof, 3, {value: 10})).to.be.revertedWith("not whitelisted");
   });
+
+  it.skip("Test VRF", async function() {
+    await network.provider.request({
+      method: "hardhat_impersonateAccount",
+      params: ["0xa1aed6f3B7C8F871b4Ac27144ADE9fDa6fBCD639"],
+    });
+    let owner = await ethers.getSigner("0xa1aed6f3B7C8F871b4Ac27144ADE9fDa6fBCD639");
+
+
+    let vrf = new ethers.Contract(
+      "0x271682DEB8C4E0901D1a1550aD2e64D568E69909",
+      require("./vrf.json"),
+      owner
+    );
+    await vrf.connect(owner).addConsumer(39, OlympiaContract.address);
+    await OlympiaContract.requestRandomWords();
+    for (var i = 0; i < 20; i++) {
+      await network.provider.request({
+        method: "evm_mine",
+        params: [],
+      });
+    }
+    console.log(await OlympiaContract.randomOffset());
+
+    await expect(OlympiaContract.requestRandomWords()).to.be.revertedWith("already requested");
+  });
 });
