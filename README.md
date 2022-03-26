@@ -48,7 +48,7 @@ Whitelisted callers can mint any number of tokens. However, only 1/3 of the tota
 ### VRF
 This contract uses Chainlink VRF to generate a random offset between 1 and 7776. Offset can only be generated once.
 
-**!! Deployer is responsible for calling requestRandomWords to generate the offset**
+**!! Deployer is responsible for calling adding OlympiaWhitelist contract as a VRF consumer and call requestRandomWords to generate the offset**
 
 *notes*
 Rinkbey testnet:
@@ -60,9 +60,11 @@ Rinkbey testnet:
 
 ### Requirements after deployment
 1. OlympiaWhitelist must be set as MinterRole for HallsOfOlympia
-2. Deployer must set the merkleRoot
-3. Deployer must set isStarted to true
-4. Deployer must call requestRandomWords
+2. Deployer must set OlympiaWhitelist address as VRF consumer
+3. Deployer must call requestRandomWords
+4. Deployer must set the merkleRoot
+5. Deployer must set isStarted to true
+
 
 # Testing
 Tests can be run locally with `npx hardhat test`
