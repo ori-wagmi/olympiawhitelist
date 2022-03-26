@@ -101,6 +101,11 @@ describe("Test Whitelist", function () {
 
     // error case, not enough funds
     await expect(OlympiaContract.connect(accounts[10]).mintETH(callerProof, 1, {value:0})).to.be.revertedWith("not enough ETH");
+
+    // Test public mint
+    await OlympiaContract.setIsPublicMintStarted(true);
+    await OlympiaContract.connect(accounts[1]).mintETH(callerProof, 1, {value:priceOneTokenEth});
+    expect(await HallsOfOlympia.ownerOf(9), "tokenid 9 not owned by 1").to.be.equal(accounts[1].address);
   });
 
   it("Test mint Ohm", async function () {
@@ -152,7 +157,6 @@ describe("Test Whitelist", function () {
     .connect(accounts[10])
     .approve(OlympiaContract.address, ethers.constants.MaxUint256);
 
-
     // mint 3 tokens
     let nextTokenId = await HallsOfOlympia.nextTokenId();
     await OlympiaContract.connect(accounts[10]).mintOHM(callerProof, 3, priceOneTokenOhm.mul(3));
@@ -179,6 +183,14 @@ describe("Test Whitelist", function () {
     // error case, minting >1/3 tokens with OHM
     await expect(OlympiaContract.connect(accounts[10]).mintOHM(callerProof, 3000, priceOneTokenOhm.mul(3000))).to.be.revertedWith("OHM mint ended");
 
+    // Test public mint
+    await OlympiaContract.setIsPublicMintStarted(true);
+    await ohmContract.transfer(accounts[1].address, await ohmContract.balanceOf(accounts[10].address));
+    await ohmContract
+    .connect(accounts[1])
+    .approve(OlympiaContract.address, ethers.constants.MaxUint256);
+    await OlympiaContract.connect(accounts[1]).mintOHM(callerProof, 1, priceOneTokenOhm);
+    expect(await HallsOfOlympia.ownerOf(8), "tokenid 8 not owned by 1").to.be.equal(accounts[1].address);
   });
 
   it("Test non-whitelist mint", async function() {

@@ -20,6 +20,7 @@ interface IOlympiaNftContract {
 
 contract OlympiaWhitelist is Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
     bool public isStarted;
+    bool public isPublicMintStarted;
     bytes32 public merkleRoot;
     uint256 public numOhmMinted;
 
@@ -78,8 +79,10 @@ contract OlympiaWhitelist is Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
 
     // ************Modifiers************ //
     modifier whitelisted(bytes32[] calldata merkleProof) {
-        bytes32 leaf = keccak256(abi.encodePacked(msg.sender));
-        require(MerkleProof.verify(merkleProof, merkleRoot, leaf), "not whitelisted");
+        if (!isPublicMintStarted) {
+            bytes32 leaf = keccak256(abi.encodePacked(msg.sender));
+            require(MerkleProof.verify(merkleProof, merkleRoot, leaf), "not whitelisted");
+        }
         _;
     }
 
@@ -124,6 +127,10 @@ contract OlympiaWhitelist is Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
     }
 
     // ************Modifiers*****//******* //
+    function setIsPublicMintStarted(bool _isPublicMintStarted) external onlyOwner {
+        isPublicMintStarted = _isPublicMintStarted;
+    }
+
     function setIsStarted(bool _isStarted) external onlyOwner {
         isStarted = _isStarted;
     }
