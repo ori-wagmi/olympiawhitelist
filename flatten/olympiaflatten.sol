@@ -1,6 +1,5 @@
-// SPDX-License-Identifier: MIT
 
-// File contracts/FullMath.sol
+// SPDX-License-Identifier: MIT
 // https://github.com/Uniswap/v3-core/blob/main/contracts/libraries/FullMath.sol
 pragma solidity ^0.8.0;
 
@@ -768,24 +767,36 @@ interface IOlympiaNftContract {
 
 contract OlympiaWhitelist is Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
     bool public isStarted;
+    bool public isPublicMintStarted;
     bytes32 public merkleRoot;
     uint256 public numOhmMinted;
+    bytes32 public originalTokenHash;
 
     // Payment
-    uint256 public priceOneTokenEth = 0.19 ether;
-    address public paymentReciever = 0x940913C25A23FB6e2778Ec4b29110DC9f3F54fb0;
+    //uint256 public priceOneTokenEth = 0.19 ether;
+    //address public paymentReciever = 0x940913C25A23FB6e2778Ec4b29110DC9f3F54fb0;
 
     // Known contracts
-    IOlympiaNftContract constant public nftContract = IOlympiaNftContract(0xeB652a847e5961D1F7FA53699693eC13C008b57B);
-    IERC20 constant public ohmContract = IERC20(0x64aa3364F17a4D01c6f1751Fd97C2BD3D7e7f1D5);
+    //IOlympiaNftContract constant public nftContract = IOlympiaNftContract(0xeB652a847e5961D1F7FA53699693eC13C008b57B);
+    //IERC20 constant public ohmContract = IERC20(0x64aa3364F17a4D01c6f1751Fd97C2BD3D7e7f1D5);
+
+    // ROPSTEN TEST NET STUFF
+    address public paymentReciever = 0xa1aed6f3B7C8F871b4Ac27144ADE9fDa6fBCD639;
+    uint256 public priceOneTokenEth = 0.001 ether;
+    IOlympiaNftContract constant public nftContract = IOlympiaNftContract(0xcC737e05A6B5d94caFA523E55C5689631C8e97A4);
+    IERC20 constant public ohmContract = IERC20(0x01BE23585060835E02B77ef475b0Cc51aA1e0709); // LINK TOKEN
+    AggregatorV3Interface constant internal ohmPriceFeed = AggregatorV3Interface(0xFABe80711F3ea886C3AC102c81ffC9825E16162E);
+    VRFCoordinatorV2Interface constant internal vrfCoordinator = VRFCoordinatorV2Interface(0x6168499c0cFfCaCD319c818142124B7A15E857ab);
+    uint64 constant internal subscriptionId = 1902;
+    bytes32 constant internal keyHash = 0xd89b2bf150e3b9e13446986e571fb9cab24b13cea0a43ea20a6049a85cc807cc;
 
     // Ohm Price Oracle
-    AggregatorV3Interface constant internal ohmPriceFeed = AggregatorV3Interface(0x9a72298ae3886221820B1c878d12D872087D3a23);
+    //AggregatorV3Interface constant internal ohmPriceFeed = AggregatorV3Interface(0x9a72298ae3886221820B1c878d12D872087D3a23);
 
     // VRFCoordinator
-    VRFCoordinatorV2Interface constant internal vrfCoordinator = VRFCoordinatorV2Interface(0x271682DEB8C4E0901D1a1550aD2e64D568E69909);
-    uint64 constant internal subscriptionId = 39;
-    bytes32 constant internal keyHash = 0xff8dedfbfa60af186cf3c830acbc32c05aae823045ae5ea7da1e45fbfaba4f92;
+    // VRFCoordinatorV2Interface constant internal vrfCoordinator = VRFCoordinatorV2Interface(0x271682DEB8C4E0901D1a1550aD2e64D568E69909);
+    // uint64 constant internal subscriptionId = 39;
+    // bytes32 constant internal keyHash = 0xff8dedfbfa60af186cf3c830acbc32c05aae823045ae5ea7da1e45fbfaba4f92;
     uint256 public requestId;
     uint256 public randomOffset;
     bool callOnce;
@@ -802,7 +813,8 @@ contract OlympiaWhitelist is Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
             /*uint80 answeredInRound*/
         ) = ohmPriceFeed.latestRoundData();
         // priceOneTokenEth / priceOneOhmInEth * 1e9 for decimals
-        return FullMath.mulDiv(priceOneTokenEth, 1000000000, uint256(price));
+        //return FullMath.mulDiv(priceOneTokenEth, 1000000000, uint256(price));
+        return FullMath.mulDiv(priceOneTokenEth, 1000000000000000000, uint256(price));
     }
 
     function requestRandomWords() external onlyOwner {
@@ -826,8 +838,10 @@ contract OlympiaWhitelist is Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
 
     // ************Modifiers************ //
     modifier whitelisted(bytes32[] calldata merkleProof) {
-        bytes32 leaf = keccak256(abi.encodePacked(msg.sender));
-        require(MerkleProof.verify(merkleProof, merkleRoot, leaf), "not whitelisted");
+        if (!isPublicMintStarted) {
+            bytes32 leaf = keccak256(abi.encodePacked(msg.sender));
+            require(MerkleProof.verify(merkleProof, merkleRoot, leaf), "not whitelisted");
+        }
         _;
     }
 
@@ -840,6 +854,7 @@ contract OlympiaWhitelist is Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
     // ************Mint functions************ //
     function mintETH(bytes32[] calldata merkleProof, uint256 amount) whitelisted(merkleProof) checkSupply(amount) external payable nonReentrant {
         require(isStarted, "not started");
+        require(amount <= 20, "max 20");
         uint256 totalPrice = amount*priceOneTokenEth;
         require(msg.value >= totalPrice, "not enough ETH");
 
@@ -860,6 +875,7 @@ contract OlympiaWhitelist is Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
 
     function mintOHM(bytes32[] calldata merkleProof, uint256 amountTokens, uint256 amountOhm) whitelisted(merkleProof) checkSupply(amountTokens) external nonReentrant {
         require(isStarted, "not started");
+        require (amountTokens <= 20, "max 20");
         uint256 totalPrice = amountTokens*priceOneTokenOhm();
         require(amountOhm == totalPrice, "not enough OHM");
         require((numOhmMinted+amountTokens) <= 2592, "OHM mint ended");
@@ -872,6 +888,10 @@ contract OlympiaWhitelist is Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
     }
 
     // ************Modifiers*****//******* //
+    function setIsPublicMintStarted(bool _isPublicMintStarted) external onlyOwner {
+        isPublicMintStarted = _isPublicMintStarted;
+    }
+
     function setIsStarted(bool _isStarted) external onlyOwner {
         isStarted = _isStarted;
     }
@@ -890,5 +910,10 @@ contract OlympiaWhitelist is Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
 
     function setNumOhmMinted(uint256 _numOhmMinted) external onlyOwner {
         numOhmMinted = _numOhmMinted;
+    }
+
+    function setOriginalTokenHash(bytes32 _originalTokenHash) external onlyOwner {
+        require(!callOnce, "can't set after VRF");
+        originalTokenHash = _originalTokenHash;
     }
 }

@@ -10,6 +10,12 @@ async function main() {
   const olympia = await OlympiaFactory.deploy();
   await olympia.deployed();
   console.log("deployed: ", olympia.address);
+
+  // const HOAFactory = await ethers.getContractFactory("HallsofOlympia");
+  // const hoa = await HOAFactory.deploy("Hall Of Olympia", "HOO", 7776, 'ipfs://QmTdgwYfjbd2adKDgtpLk2119n29DoJEfpkNxh5SyrCZC5/', "", "0xa1aed6f3B7C8F871b4Ac27144ADE9fDa6fBCD639");
+  // await hoa.deployed();
+  // console.log("hoo: ", hoa.address);
+
 }
 
 // We recommend this pattern to be able to use async/await everywhere

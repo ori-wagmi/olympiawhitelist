@@ -27,10 +27,15 @@ describe("Test Whitelist", function () {
     accounts = await ethers.getSigners();
 
     // Setup merkle tree
+    // merkleTreeDB = [
+    //   accounts[10].address,
+    //   accounts[11].address
+    // ];
     merkleTreeDB = [
-      accounts[10].address,
-      accounts[11].address
-    ];
+      "0x940913C25A23FB6e2778Ec4b29110DC9f3F54fb0",
+      "0xa1aed6f3B7C8F871b4Ac27144ADE9fDa6fBCD639",
+      "0xF66Db38faf6E4D3D7f201B2DD0710A331282bE6F"
+    ]
     const leafNodes = merkleTreeDB.map(convertEntryToHash);
     merkleTree = new MerkleTree(leafNodes, keccak256, { sortPairs: true });
   });
@@ -52,7 +57,19 @@ describe("Test Whitelist", function () {
     OlympiaContract = await OlympiaFactory.deploy();
     await OlympiaContract.deployed();
     await OlympiaContract.setMerkleRoot(merkleTree.getRoot());
+    MerkleTree.print(merkleTree);
+    console.log("merkleRoot: ", merkleTree.getHexRoot());
 
+    let callerHash = convertEntryToHash("0x940913C25A23FB6e2778Ec4b29110DC9f3F54fb0");
+    let callerProof = merkleTree.getHexProof(callerHash);
+    console.log("0x9409 proof:", callerProof);
+    callerHash = convertEntryToHash("0xa1aed6f3B7C8F871b4Ac27144ADE9fDa6fBCD639");
+    callerProof = merkleTree.getHexProof(callerHash);
+    console.log("0xa1a proof: ", callerProof)
+    callerHash = convertEntryToHash("0xF66Db38faf6E4D3D7f201B2DD0710A331282bE6F");
+    callerProof = merkleTree.getHexProof(callerHash);
+    console.log("0xF66 proof: ", callerProof)
+    
     // set OlympiaContract as minter
     await network.provider.request({
       method: "hardhat_impersonateAccount",
