@@ -10,8 +10,6 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 
-//import "hardhat/console.sol";
-
 interface IOlympiaNftContract {
   function totalSupply() external view returns (uint256);
   function nextTokenId() external view returns (uint256);
@@ -26,30 +24,20 @@ contract OlympiaWhitelist is Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
     bytes32 public originalTokenHash;
 
     // Payment
-    //uint256 public priceOneTokenEth = 0.19 ether;
-    //address public paymentReciever = 0x940913C25A23FB6e2778Ec4b29110DC9f3F54fb0;
+    uint256 public priceOneTokenEth = 0.19 ether;
+    address public paymentReciever = 0x940913C25A23FB6e2778Ec4b29110DC9f3F54fb0;
 
     // Known contracts
-    //IOlympiaNftContract constant public nftContract = IOlympiaNftContract(0xeB652a847e5961D1F7FA53699693eC13C008b57B);
-    //IERC20 constant public ohmContract = IERC20(0x64aa3364F17a4D01c6f1751Fd97C2BD3D7e7f1D5);
-
-    // ROPSTEN TEST NET STUFF
-    address public paymentReciever = 0xa1aed6f3B7C8F871b4Ac27144ADE9fDa6fBCD639;
-    uint256 public priceOneTokenEth = 0.001 ether;
-    IOlympiaNftContract constant public nftContract = IOlympiaNftContract(0xcC737e05A6B5d94caFA523E55C5689631C8e97A4);
-    IERC20 constant public ohmContract = IERC20(0x01BE23585060835E02B77ef475b0Cc51aA1e0709); // LINK TOKEN
-    AggregatorV3Interface constant internal ohmPriceFeed = AggregatorV3Interface(0xFABe80711F3ea886C3AC102c81ffC9825E16162E);
-    VRFCoordinatorV2Interface constant internal vrfCoordinator = VRFCoordinatorV2Interface(0x6168499c0cFfCaCD319c818142124B7A15E857ab);
-    uint64 constant internal subscriptionId = 1902;
-    bytes32 constant internal keyHash = 0xd89b2bf150e3b9e13446986e571fb9cab24b13cea0a43ea20a6049a85cc807cc;
+    IOlympiaNftContract constant public nftContract = IOlympiaNftContract(0xeB652a847e5961D1F7FA53699693eC13C008b57B);
+    IERC20 constant public ohmContract = IERC20(0x64aa3364F17a4D01c6f1751Fd97C2BD3D7e7f1D5);
 
     // Ohm Price Oracle
-    //AggregatorV3Interface constant internal ohmPriceFeed = AggregatorV3Interface(0x9a72298ae3886221820B1c878d12D872087D3a23);
+    AggregatorV3Interface constant internal ohmPriceFeed = AggregatorV3Interface(0x9a72298ae3886221820B1c878d12D872087D3a23);
 
     // VRFCoordinator
-    // VRFCoordinatorV2Interface constant internal vrfCoordinator = VRFCoordinatorV2Interface(0x271682DEB8C4E0901D1a1550aD2e64D568E69909);
-    // uint64 constant internal subscriptionId = 39;
-    // bytes32 constant internal keyHash = 0xff8dedfbfa60af186cf3c830acbc32c05aae823045ae5ea7da1e45fbfaba4f92;
+    VRFCoordinatorV2Interface constant internal vrfCoordinator = VRFCoordinatorV2Interface(0x271682DEB8C4E0901D1a1550aD2e64D568E69909);
+    uint64 constant internal subscriptionId = 39;
+    bytes32 constant internal keyHash = 0xff8dedfbfa60af186cf3c830acbc32c05aae823045ae5ea7da1e45fbfaba4f92;
     uint256 public requestId;
     uint256 public randomOffset;
     bool callOnce;
@@ -66,8 +54,7 @@ contract OlympiaWhitelist is Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
             /*uint80 answeredInRound*/
         ) = ohmPriceFeed.latestRoundData();
         // priceOneTokenEth / priceOneOhmInEth * 1e9 for decimals
-        //return FullMath.mulDiv(priceOneTokenEth, 1000000000, uint256(price));
-        return FullMath.mulDiv(priceOneTokenEth, 1000000000000000000, uint256(price));
+        return FullMath.mulDiv(priceOneTokenEth, 1000000000, uint256(price));
     }
 
     function requestRandomWords() external onlyOwner {
@@ -86,7 +73,7 @@ contract OlympiaWhitelist is Ownable, ReentrancyGuard, VRFConsumerBaseV2 {
         uint256, /* requestId */
         uint256[] memory randomWords
     ) internal override {
-        randomOffset = (randomWords[0] % 7760) + 1;
+        randomOffset = (randomWords[0] % 7776) + 1;
     }
 
     // ************Modifiers************ //

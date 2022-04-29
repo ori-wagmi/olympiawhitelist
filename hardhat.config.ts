@@ -28,6 +28,11 @@ const config: HardhatUserConfig = {
         blockNumber: 14458594
       }
     },
+    eth: {
+      chainId: 1,
+      url: "https://eth-mainnet.alchemyapi.io/v2/hf_xN5Ws2zEY3QZzdPvpk0bYpMfDZNjy",
+      accounts: [ `0x${PRIVATE_KEY}` ]
+    },
     ropsten: {
       chainId: 3,
       url: `https://ropsten.infura.io/v3/18bd4091bfc647b9bef6eb178b0547d7`,
@@ -37,6 +42,7 @@ const config: HardhatUserConfig = {
       chainId: 4,
       url: `https://rinkeby.infura.io/v3/c0a809d606714c29bc1460f8fa798876`,
       accounts: [ `0x${PRIVATE_KEY}` ],
+      gas: 40000000,
     }
   }
 };
