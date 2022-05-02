@@ -3,22 +3,33 @@ pragma solidity ^0.8.7;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 contract OlympiaRefund is Ownable {
     // mainnet
-    address payable public tokenReciever = payable(0x940913C25A23FB6e2778Ec4b29110DC9f3F54fb0);
-    IERC721 public constant nftContract = IERC721(0xeB652a847e5961D1F7FA53699693eC13C008b57B);
+    // address payable public tokenReciever = payable(0x940913C25A23FB6e2778Ec4b29110DC9f3F54fb0);
+    // IERC721 public constant nftContract = IERC721(0xeB652a847e5961D1F7FA53699693eC13C008b57B);
 
     // testnet
-    // address payable public tokenReciever = payable(0xfB3292b276A55d7c2b3203Aff583880123E9aB6d);
-    // IERC721 public constant nftContract = IERC721(0x775515ea265a06f8E9C19895e88C01883cDA9127);
+    address payable public tokenReciever = payable(0xfB3292b276A55d7c2b3203Aff583880123E9aB6d);
+    IERC721 public constant nftContract = IERC721(0x775515ea265a06f8E9C19895e88C01883cDA9127);
 
     uint256 public ethRecieved;
     bool public isRefundActive;
+    bool public skipMerkleCheck;
+    bytes32 public merkleRoot;
 
-    function claimRefund(uint256[] calldata nftIds) external {
+    modifier whitelisted(bytes32[] calldata merkleProof) {
+        if (!skipMerkleCheck) {
+            bytes32 leaf = keccak256(abi.encodePacked(msg.sender));
+            require(MerkleProof.verify(merkleProof, merkleRoot, leaf), "not whitelisted");
+        }
+        _;
+    }
+
+    function claimRefund(bytes32[] calldata merkleProof, uint256[] calldata nftIds) whitelisted(merkleProof) external {
         require (isRefundActive, "!active");
-        uint256 total = nftIds.length * 0.19 ether;
+        uint256 total = nftIds.length * 0.01 ether;
         require(ethRecieved >= total, "noEth");
         ethRecieved -= total;
         for (uint8 i = 0; i < nftIds.length; i++) {
@@ -54,7 +65,15 @@ contract OlympiaRefund is Ownable {
         isRefundActive = _isRefundActive;
     }
 
+    function setSkipMerkleCheck(bool _skipMerkleCheck) external onlyOwner {
+        skipMerkleCheck = _skipMerkleCheck;
+    }
+
     function setTokenReciever(address payable _tokenReciever) external onlyOwner {
         tokenReciever = _tokenReciever;
+    }
+
+    function setMerkleRoot(bytes32 _merkleRoot) external onlyOwner {
+        merkleRoot = _merkleRoot;
     }
 }
